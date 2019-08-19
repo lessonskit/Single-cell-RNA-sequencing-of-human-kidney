@@ -1,7 +1,7 @@
 library(Seurat)
 
 #PT data loading
-PT=readRDS(file = "/home/yuzhenyuan/single cell data/kid/PT.rds")
+PT=readRDS(file="/home/yuzhenyuan/single cell data/kid/har/PT.rds")
 
 #Seurat data convert to monocle data
 library(monocle)
@@ -33,7 +33,7 @@ my_cds_subset <- clusterCells(my_cds_subset,rho_threshold = 2,delta_threshold = 
 table(pData(my_cds_subset)$Cluster)
 plot_cell_clusters(my_cds_subset)
 head(pData(my_cds_subset))
-clustering_DEG_genes <- differentialGeneTest(my_cds_subset,fullModelFormulaStr = '~Cluster',cores = 16)
+clustering_DEG_genes <- differentialGeneTest(my_cds_subset,fullModelFormulaStr = '~Cluster',cores = 11)
 dim(clustering_DEG_genes)
 library(dplyr)
 clustering_DEG_genes %>% arrange(qval) %>% head()
@@ -45,18 +45,19 @@ my_cds_subset <- orderCells(my_cds_subset)
 #pseudotime trajectories calculated
 plot_cell_trajectory(my_cds_subset, color_by = "State")
 plot_cell_trajectory(my_cds_subset, color_by = "res.0.6")
+plot_cell_trajectory(my_cds_subset, color_by = "orig.ident")
 head(pData(my_cds_subset))
-my_pseudotime_de <- differentialGeneTest(my_cds_subset,fullModelFormulaStr = "~sm.ns(Pseudotime)",cores = 16)
+my_pseudotime_de <- differentialGeneTest(my_cds_subset,fullModelFormulaStr = "~sm.ns(Pseudotime)",cores = 11)
 my_pseudotime_de %>% arrange(qval) %>% head()
 my_pseudotime_de %>% arrange(qval) %>% head() %>% select(gene_short_name) -> my_pseudotime_gene
 plot_cell_trajectory(my_cds_subset, color_by = "Pseudotime")
 
 #"A" stand for top 6 genes of affecting the fate decisions
-A=c("RPS8","FAM151A","S100A1","RPS27","ATP1B1","G0S2")
+A=c("AKR7A3","TSPAN1","ACADM","VCAM1","HAO2","TXNIP")
 my_pseudotime_gene <-A
 plot_genes_in_pseudotime(my_cds_subset[my_pseudotime_gene,])
 
 #Calculate the heat map of the top 50 genes
 my_pseudotime_de %>% arrange(qval) %>% head(50) %>% select(gene_short_name) -> gene_to_cluster
 gene_to_cluster <- gene_to_cluster$gene_short_name
-my_pseudotime_cluster <- plot_pseudotime_heatmap(my_cds_subset[gene_to_cluster,],num_clusters = 3,cores = 8,show_rownames = TRUE,return_heatmap = TRUE)
+my_pseudotime_cluster <- plot_pseudotime_heatmap(my_cds_subset[gene_to_cluster,],num_clusters = 3,cores = 11,show_rownames = TRUE,return_heatmap = TRUE)
