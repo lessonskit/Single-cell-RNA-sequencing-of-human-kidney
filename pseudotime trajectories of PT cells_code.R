@@ -1,11 +1,19 @@
 library(Seurat)
 
 #PT data loading
-PT=readRDS(file="/home/yuzhenyuan/single cell data/kid/har/PT.rds")
+PT=readRDS(file="/staging/yuzhenyuan/PT.rds")
 
 #Seurat data convert to monocle data
 library(monocle)
-my_cds=importCDS(PT)
+data <- as(as.matrix(PT@assays$RNA@counts), 'sparseMatrix')
+pd <- new('AnnotatedDataFrame', data = PT@meta.data)
+fData <- data.frame(gene_short_name = row.names(data), row.names = row.names(data))
+fd <- new('AnnotatedDataFrame', data = fData)
+my_cds <- newCellDataSet(data,
+                              phenoData = pd,
+                              featureData = fd,
+                              lowerDetectionLimit = 0.5,
+                              expressionFamily = negbinomial.size())
 my_cds <- estimateSizeFactors(my_cds)
 my_cds <- estimateDispersions(my_cds)
 my_cds <- detectGenes(my_cds, min_expr = 0.1)
@@ -33,7 +41,7 @@ my_cds_subset <- clusterCells(my_cds_subset,rho_threshold = 2,delta_threshold = 
 table(pData(my_cds_subset)$Cluster)
 plot_cell_clusters(my_cds_subset)
 head(pData(my_cds_subset))
-clustering_DEG_genes <- differentialGeneTest(my_cds_subset,fullModelFormulaStr = '~Cluster',cores = 11)
+clustering_DEG_genes <- differentialGeneTest(my_cds_subset,fullModelFormulaStr = '~Cluster',cores = 22)
 dim(clustering_DEG_genes)
 library(dplyr)
 clustering_DEG_genes %>% arrange(qval) %>% head()
@@ -47,17 +55,17 @@ plot_cell_trajectory(my_cds_subset, color_by = "State")
 plot_cell_trajectory(my_cds_subset, color_by = "res.0.6")
 plot_cell_trajectory(my_cds_subset, color_by = "orig.ident")
 head(pData(my_cds_subset))
-my_pseudotime_de <- differentialGeneTest(my_cds_subset,fullModelFormulaStr = "~sm.ns(Pseudotime)",cores = 11)
+my_pseudotime_de <- differentialGeneTest(my_cds_subset,fullModelFormulaStr = "~sm.ns(Pseudotime)",cores = 22)
 my_pseudotime_de %>% arrange(qval) %>% head()
 my_pseudotime_de %>% arrange(qval) %>% head() %>% select(gene_short_name) -> my_pseudotime_gene
 plot_cell_trajectory(my_cds_subset, color_by = "Pseudotime")
 
 #"A" stand for top 6 genes of affecting the fate decisions
-A=c("AKR7A3","TSPAN1","ACADM","VCAM1","HAO2","TXNIP")
+A=c("AKR1A1","PDZK1","AKR7A3","AKR7A2","FABP3","GADD45A")
 my_pseudotime_gene <-A
 plot_genes_in_pseudotime(my_cds_subset[my_pseudotime_gene,])
 
 #Calculate the heat map of the top 50 genes
 my_pseudotime_de %>% arrange(qval) %>% head(50) %>% select(gene_short_name) -> gene_to_cluster
 gene_to_cluster <- gene_to_cluster$gene_short_name
-my_pseudotime_cluster <- plot_pseudotime_heatmap(my_cds_subset[gene_to_cluster,],num_clusters = 3,cores = 11,show_rownames = TRUE,return_heatmap = TRUE)
+my_pseudotime_cluster <- plot_pseudotime_heatmap(my_cds_subset[gene_to_cluster,],num_clusters = 3,cores = 22,show_rownames = TRUE,return_heatmap = TRUE)
